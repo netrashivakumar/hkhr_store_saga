@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HKHR Store</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 20px; max-width: 600px;">
+    <h2>🛒 HKHR Event-Driven Store</h2>
+    <p>Each order travels through independent services via events:
+       order → stock → payment → completed.</p>
+
+    <!-- Must match the products seeded by inventory-service -->
+    <select id="item" style="padding:10px; margin-bottom:10px;">
+        <option value="laptop">Laptop ($900)</option>
+        <option value="phone">Phone ($500)</option>
+        <option value="headphones">Headphones ($50)</option>
+        <option value="book">Book ($15)</option>
+    </select>
+    <input type="number" id="quantity" value="1" min="1" max="100"
+           style="padding:10px; width:70px; margin-bottom:10px;">
+    <br>
+    <button id="buy" onclick="placeOrder()"
+            style="padding:10px 20px; background-color:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;">
+        Buy Now
+    </button>
+
+    <p id="status" style="font-weight:bold; color:#007bff; margin-top:15px;"></p>
+    <ol id="timeline" style="color:#555;"></ol>
+
+    <p style="font-size:13px; color:#777;">
+        Try: <b>Laptop × 2</b> (payment declined above $1000, stock is released)
+        or <b>Laptop × 6</b> (only 5 in stock). Free-tier services may need up
+        to a minute to wake up.
+    </p>
+
+    <script>
+        const API_URL = {{ api_url|tojson }};
+        const LABELS = {
+            PENDING: 'Order placed, waiting for stock check...',
+            STOCK_RESERVED: 'Stock reserved, waiting for payment...',
+            COMPLETED: 'Order completed!',
+            FAILED: 'Order failed'
+        };
+        const seen = new Set();
+
+        function show(data) {
+            const status = document.getElementById('status');
+            let text = LABELS[data.status] || data.status;
+            if (data.status === 'FAILED' && data.reason) text += ': ' + data.reason;
+            if (data.status === 'COMPLETED' && data.amount != null) text += ' Total $' + data.amount.toFixed(2);
+            status.innerText = text;
+            if (!seen.has(data.status)) {
+                seen.add(data.status);
+                const li = document.createElement('li');
+                li.innerText = LABELS[data.status] || data.status;
+                document.getElementById('timeline').appendChild(li);
+            }
+        }
+
+        async function poll(orderId, attempt) {
+            try {
+                const response = await fetch(API_URL + '/api/order/' + orderId);
+                const data = await response.json();
+                if (response.ok) {
+                    show(data);
+                    if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+                        document.getElementById('buy').disabled = false;
+                        return;
+                    }
+                }
+            } catch (e) { /* service may be waking up; keep polling */ }
+            if (attempt < 90) {
+                setTimeout(function () { poll(orderId, attempt + 1); }, 2000);
+            } else {
+                document.getElementById('status').innerText = 'Still processing... check back later.';
+                document.getElementById('buy').disabled = false;
+            }
+        }
+
+        async function placeOrder() {
+            const item = document.getElementById('item').value;
+            const quantity = parseInt(document.getElementById('quantity').value, 10) || 1;
+            const status = document.getElementById('status');
+            document.getElementById('timeline').innerHTML = '';
+            seen.clear();
+            document.getElementById('buy').disabled = true;
+            status.innerText = 'Sending order...';
+            try {
+                const response = await fetch(API_URL + '/api/order', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ item: item, quantity: quantity })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    status.innerText = 'Error: ' + (data.error || 'unknown');
+                    document.getElementById('buy').disabled = false;
+                    return;
+                }
+                poll(data.order_id, 0);
+            } catch (e) {
+                status.innerText = 'Could not reach the order service (it may be waking up). Try again.';
+                document.getElementById('buy').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
