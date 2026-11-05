@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+if [ -n "$CODESPACE_NAME" ]; then
+  export ORDER_API_URL="${ORDER_API_URL:-https://${CODESPACE_NAME}-5001.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}}"
+  export ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-https://${CODESPACE_NAME}-5000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}}"
+fi
 # Starts all services locally.
 #   REDIS_URL     required (Upstash URL)
 #   DATABASE_URL  one Postgres URL used by all three DB services (fine locally:
@@ -23,6 +27,6 @@ sleep 3   # let order-service create its tables first
 (cd services/inventory-service   && PORT=5002 DATABASE_URL="$INVENTORY_DB" python worker.py) &
 (cd services/payment-service     && PORT=5004 DATABASE_URL="$PAYMENTS_DB"  python worker.py) &
 (cd services/notification-worker && PORT=5003 python worker.py) &
-(cd services/frontend            && PORT=5000 ORDER_API_URL=http://localhost:5001 python app.py) &
+(cd services/frontend            && PORT=5000 ORDER_API_URL="${ORDER_API_URL:-http://localhost:5001}" python app.py) &
 
 wait
