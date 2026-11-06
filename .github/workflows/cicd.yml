@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [inventory-service, payment-service, order-service, notification-workercd]   # add services here as you write their tests
+        service: [inventory-service, payment-service, order-service, notification-worker]   # add services here as you write their tests
     defaults:
       run:
         working-directory: services/${{ matrix.service }}
