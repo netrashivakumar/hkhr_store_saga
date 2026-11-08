@@ -1,0 +1,38 @@
+services:
+  frontend:
+    build: ./services/frontend
+    ports: ["5000:5000"]
+    environment:
+      PORT: 5000
+      ORDER_API_URL: ${ORDER_API_URL:-http://localhost:5001}
+
+  order-service:
+    build: ./services/order-service
+    ports: ["5001:5001"]
+    environment:
+      PORT: 5001
+      REDIS_URL: ${REDIS_URL}
+      DATABASE_URL: ${ORDERS_DATABASE_URL:-${DATABASE_URL}}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5000}
+
+  inventory-service:
+    build: ./services/inventory-service
+    environment:
+      PORT: 5002
+      REDIS_URL: ${REDIS_URL}
+      DATABASE_URL: ${INVENTORY_DATABASE_URL:-${DATABASE_URL}}
+    depends_on: [order-service]
+
+  payment-service:
+    build: ./services/payment-service
+    environment:
+      PORT: 5004
+      REDIS_URL: ${REDIS_URL}
+      DATABASE_URL: ${PAYMENTS_DATABASE_URL:-${DATABASE_URL}}
+    depends_on: [order-service]
+
+  notification-worker:
+    build: ./services/notification-worker
+    environment:
+      PORT: 5003
+      REDIS_URL: ${REDIS_URL}
