@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/netrashivakumar/hkhr-frontend:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+          envFrom:
+            - configMapRef:
+                name: hkhr-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 5000
+      targetPort: 5000

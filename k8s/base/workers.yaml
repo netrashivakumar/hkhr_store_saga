@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory-service
+  template:
+    metadata:
+      labels:
+        app: inventory-service
+    spec:
+      containers:
+        - name: inventory-service
+          image: ghcr.io/netrashivakumar/hkhr-inventory-service:dev
+          imagePullPolicy: Always
+          env:
+            - name: PORT
+              value: "5002"
+          envFrom:
+            - secretRef:
+                name: hkhr-secrets
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: ghcr.io/netrashivakumar/hkhr-payment-service:dev
+          imagePullPolicy: Always
+          env:
+            - name: PORT
+              value: "5004"
+          envFrom:
+            - secretRef:
+                name: hkhr-secrets
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-worker
+  template:
+    metadata:
+      labels:
+        app: notification-worker
+    spec:
+      containers:
+        - name: notification-worker
+          image: ghcr.io/netrashivakumar/hkhr-notification-worker:dev
+          imagePullPolicy: Always
+          env:
+            - name: PORT
+              value: "5003"
+          envFrom:
+            - secretRef:
+                name: hkhr-secrets
