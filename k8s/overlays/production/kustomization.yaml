@@ -3,3 +3,12 @@ kind: Kustomization
 namespace: production
 resources:
   - ../../base
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: STREAM_PREFIX
+          value: "prod:"

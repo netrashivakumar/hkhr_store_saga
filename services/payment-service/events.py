@@ -17,6 +17,15 @@ RECLAIM_IDLE_MS = 30000     # a pending message idle this long gets retried
 RECLAIM_EVERY_S = 60        # how often to look for stuck messages
 BLOCK_MS = 20000            # long blocking read keeps Redis command usage low
 
+# Optional per-environment prefix for every stream name. It lets several
+# environments (for example staging and production) share one Redis without
+# seeing each other's events. Empty (the default) keeps the original names.
+STREAM_PREFIX = os.environ.get("STREAM_PREFIX", "")
+
+
+def stream_name(name):
+    return f"{STREAM_PREFIX}{name}"
+
 
 def log(message):
     print(message, flush=True)
@@ -30,7 +39,7 @@ def get_redis():
 
 def publish(r, stream, event_type, payload):
     """Append an event to a stream. One stream per event type."""
-    return r.xadd(stream, {
+    return r.xadd(stream_name(stream), {
         "event_id": str(uuid.uuid4()),
         "event_type": event_type,
         "occurred_at": str(int(time.time())),
@@ -47,14 +56,15 @@ def _process(r, group, stream, msg_id, data, handler):
         pending = r.xpending_range(stream, group, msg_id, msg_id, 1)
         deliveries = pending[0]["times_delivered"] if pending else 1
         if deliveries >= MAX_DELIVERIES:
-            r.xadd(DEAD_LETTER_STREAM, {
+            dead_letter = stream_name(DEAD_LETTER_STREAM)
+            r.xadd(dead_letter, {
                 **data,
                 "source_stream": stream,
                 "group": group,
                 "error": str(exc)[:500],
             }, maxlen=1000, approximate=True)
             r.xack(stream, group, msg_id)
-            log(f"[{group}] moved {stream}/{msg_id} to {DEAD_LETTER_STREAM}")
+            log(f"[{group}] moved {stream}/{msg_id} to {dead_letter}")
 
 
 def _reclaim(r, group, consumer, handlers):
@@ -74,6 +84,9 @@ def consume(r, service, handlers):
     own copy of every event. Handlers must be idempotent (delivery is
     at-least-once).
     """
+    # Apply the environment prefix once, here, so the rest of the loop works
+    # with the real stream names.
+    handlers = {stream_name(s): h for s, h in handlers.items()}
     group = f"{service}-group"
     consumer = f"{socket.gethostname()}-{os.getpid()}"
     ready = False
