@@ -12,3 +12,12 @@ patches:
         value:
           name: STREAM_PREFIX
           value: "prod:"
+
+configMapGenerator:
+  - name: hkhr-config
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - ALLOWED_ORIGINS=*
+      - ORDER_API_URL=https://zany-fiesta-5g775rgxwpv3xv9-5001.app.github.dev
+      - WAKE_URLS=

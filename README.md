@@ -498,3 +498,26 @@ Then check the tables in Neon and the streams in Upstash's Data Browser.
 - **Known limitation, the dual-write problem**: a service commits to its DB and then publishes.
   A crash in between is repaired by re-publishing on redelivery here, but production systems
   use the **transactional outbox pattern**. A good next exercise.
+
+## One-time cluster setup
+
+The Kubernetes manifests expect a ConfigMap and a Secret named `hkhr-config` and `hkhr-secrets` in each namespace (`staging`, `production`). The Secret is not created by the pipeline, so create it once per namespace before the first deploy. Without it, pods fail with `CreateContainerConfigError`.
+
+```bash
+kubectl create namespace staging    # if it doesn't exist yet
+
+# Secret (never commit these values)
+kubectl -n staging create secret generic hkhr-secrets \
+  --from-literal=DATABASE_URL='<database url>' \
+  --from-literal=REDIS_URL='<redis url>'
+
+# Repeat with -n production and the production values
+```
+
+`hkhr-config` is generated from the overlays (`ALLOWED_ORIGINS`, `ORDER_API_URL`, `WAKE_URLS`), so it needs no manual step.
+
+If pods are stuck in `CreateContainerConfigError`, this shows which object is missing:
+
+```bash
+kubectl -n staging get events --sort-by=.lastTimestamp | grep -i "not found"
+```
