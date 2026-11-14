@@ -119,7 +119,7 @@ Each service folder also has a `.dockerignore`, `requirements.txt`, `requirement
   use unprefixed streams and therefore share them. Don't run workers for both at the same time.
 - The `production` branch was created from `dev` with **Branch schema only** (structure
   without rows). A schema-only branch has no parent in the Neon console. Seed the `stock`
-  table before testing the happy path (see [Production](#production-deployment)).
+  table before testing the happy path (see [Production](#6-production-deployment)).
 
 ## Configuration
 
@@ -310,7 +310,7 @@ pkill -f "kubectl port-forward"                # when you are done
 
 A port-forward is tied to one pod, so start it again after any `rollout restart`.
 
-## Production deployment
+## 6. Production deployment
 
 Production runs in the `production` namespace on the same kind cluster, with its own Neon
 branch, its own Secret and ConfigMap, and its own stream prefix.
@@ -371,7 +371,7 @@ while testing. The production `stock` table is empty (schema-only branch), so in
 rows in the Neon SQL Editor (branch `production`, database `neondb`) before testing the happy
 path. Then run the orders in [Things to try](#things-to-try).
 
-## 6. CI/CD
+## 7. CI/CD
 
 - **GitHub Actions** (`.github/workflows/cicd.yml`, "CI/CD Pipeline") runs lint and tests on
   pushes and pull requests.
@@ -393,7 +393,7 @@ and then wait for each deployment's rollout. Jenkins needs a kubeconfig for the 
 **rebuild the cluster, and you must give Jenkins a new kubeconfig.** The Secret
 for the target namespace must exist before the first deploy.
 
-## 7. Deploy on Render (original free hosting option)
+## 8. Deploy on Render (original free hosting option)
 
 Create one **Web Service** per row (same repo, set **Root Directory**, build command `pip install -r requirements.txt`).
 Create the three workers first so you have their URLs.
@@ -440,6 +440,34 @@ Then check the tables in Neon and the streams in Upstash's Data Browser.
 | Workers crash with `Port could not be cast to integer value ... 'rediss:'` | `REDIS_URL` was pasted twice into the Secret | Delete and recreate the Secret; the `://` count check must print 1 |
 | Pod stuck in `ImagePullBackOff` | Image missing or private | Check the image name and that the package is Public |
 | Order fails with `database unavailable` or `event broker unavailable` | `DATABASE_URL` or `REDIS_URL` wrong in the Secret | Recreate the Secret, `rollout restart deployment` |
+
+## What I learned operating this
+
+**A deploy that failed with healthy images.** A Jenkins `dev` build failed in **Deploy to staging**
+after Test, Build and Push had passed. The log ended with
+`error: timed out waiting for the condition` while waiting for the frontend rollout.
+
+- **Finding it:** the pods were in `CreateContainerConfigError`. `kubectl get events` filtered
+  for `not found` named the missing objects: the ConfigMap `hkhr-config` and the Secret
+  `hkhr-secrets`. Both had been created by hand in the `production` namespace and never in `staging`.
+- **Fixing it:** I created the Secret in staging and moved the ConfigMap into both overlays with
+  `configMapGenerator`, so it is now part of every deploy. The Secret stays out of git.
+- **Checking it:** `kubectl kustomize k8s/overlays/<env>` shows what will be applied, and
+  `kubectl diff` showed no change to the live production objects before I pushed.
+
+**A mistake I caught.** While editing the staging overlay I broke it: the file lost its
+`resources:` and `patches:` and ended up with a duplicate `configMapGenerator:`. The render
+showed only a ConfigMap and no Deployments. A pipeline can still go green in that state,
+because the rollout wait passes against the old pods while nothing new is deployed. I restored
+the file from git history and re-added the block once.
+
+**Takeaways**
+
+- Look at the rendered manifests before pushing, not only whether the build is green.
+- Anything created by hand in one namespace is a gap in the others. Put what you can in git.
+- Read the first error in a log, not the last lines. The end of a failed Jenkins run is only cleanup.
+- A manual approval prompt is easy to miss. Here the button is labeled **Deploy**, and an
+  unanswered prompt eventually ends as aborted.
 
 ## Security notes
 
