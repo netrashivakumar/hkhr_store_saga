@@ -1,10 +1,85 @@
 # 🛒 hkhr_store: Event-Driven Microservices with a Saga
 
-Five small services, each with its **own responsibility and its own tables**,
+A **full stack**, event-driven microservices project: five small services, each with its **own responsibility and its own tables**,
 cooperating only through **events** on Upstash Redis Streams. The services are
 packaged as Docker images, published to GitHub Container Registry (GHCR), built and
 deployed by Jenkins, and run with Docker Compose or on Kubernetes (staging and
 production namespaces). Everything uses free services.
+
+## About this project
+
+hkhr_store_saga is a **prototype**, built to demonstrate how a full stack,
+event-driven system fits together. It is deliberately small: each technology is used
+for real and works end to end, but the store itself is minimal.
+
+**What it is not:** a finished online store. Payments follow a simple simulated rule
+(an order over a limit fails) rather than a real payment provider, and there is no
+user login, cart or product catalog.
+
+**What it is:** a working example of the architecture and tooling a real store could be
+built on, and a place to practice them.
+
+### Technologies used
+
+| Area | Technologies |
+|---|---|
+| Language and web | Python 3.12, Flask, gunicorn, flask-cors |
+| Events | Redis Streams on Upstash |
+| Database | PostgreSQL on Neon, psycopg2 |
+| Containers | Docker, Docker Compose, GitHub Container Registry (GHCR) |
+| Orchestration | Kubernetes (kind), kubectl, Kustomize |
+| CI/CD | GitHub Actions, Jenkins |
+| Testing and quality | pytest (unit and mock tests), flake8 |
+| Development | Git, GitHub, GitHub Codespaces |
+
+### Cloud services used
+
+| Service | Kind | Role |
+|---|---|---|
+| **Neon** | Managed serverless PostgreSQL | Data layer, one branch per environment |
+| **Upstash** | Managed serverless Redis | Event bus (Redis Streams) |
+| **GitHub Container Registry (GHCR)** | Cloud container registry | Stores the five service images |
+| **GitHub and GitHub Actions** | Cloud source hosting and CI | Code, lint and tests on every push |
+| **GitHub Codespaces** | Cloud development environment | Where the project is developed, built and run |
+
+The data store, event broker, image registry, CI and development environment are all cloud
+services, and the free tiers cover all of them. The application containers themselves run
+on a local kind (Kubernetes in Docker) cluster inside a Codespace, not on managed cloud compute.
+Deploying the same images to a hosting platform such as Render, or to managed Kubernetes
+(EKS, AKS or GKE), is the natural next step.
+
+### Patterns demonstrated
+
+- **Saga, choreography style:** an order spans several services with no central coordinator.
+- **Compensating transactions:** a failed payment releases the reserved stock.
+- **Database per service** and **idempotent consumers**.
+- **At-least-once delivery** with consumer groups, acknowledgements, retries and a dead-letter stream.
+- **Environment isolation:** Neon branches, Kubernetes namespaces and stream prefixes.
+- **Gated deployments:** staging on every `dev` build, production after manual approval.
+
+### Growing it into a full store
+
+The structure supports this. Real additions would be user accounts, a product catalog and
+cart, a real payment provider, the transactional outbox pattern, a separate message broker
+per environment, managed Kubernetes with a secrets manager, and monitoring and alerting.
+See [Known limitations](#known-limitations) for the gaps in this version.
+
+## Full stack, by layer
+
+hkhr_store is a **full stack** project: it covers the user interface, the business
+logic, the data, and the delivery pipeline that ships it.
+
+| Layer | What it is here | Where it lives |
+|---|---|---|
+| **Frontend** | A Flask app that serves the store page. The browser loads it from port 5000 and calls order-service directly at `ORDER_API_URL`. | `services/frontend` |
+| **Backend** | Four Python services: order-service (HTTP API), plus inventory-service, payment-service and notification-worker, which are event-driven workers. | `services/order-service`, `services/inventory-service`, `services/payment-service`, `services/notification-worker` |
+| **Data** | PostgreSQL on Neon (one set of tables per service, one branch per environment) and Redis Streams on Upstash (the event bus). | Neon, Upstash |
+| **DevOps** | Docker and Docker Compose, images in GHCR, Kubernetes (kind) with Kustomize overlays, Jenkins for gated deploys, GitHub Actions for lint and tests. | `Dockerfile`s, `docker-compose.yml`, `k8s/`, `Jenkinsfile`, `jenkins/`, `.github/workflows/` |
+
+```text
+ Frontend ──> Backend ──> Data          (the application)
+     └───────────┴──────────┴──> DevOps (build, test, ship, run)
+```
 
 ## The order saga (choreography)
 
