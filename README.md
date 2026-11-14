@@ -1,10 +1,10 @@
 # 🛒 hkhr_store: Event-Driven Microservices with a Saga
 
-A **full stack**, event-driven microservices project: five small services, each with its **own responsibility and its own tables**,
-cooperating only through **events** on Upstash Redis Streams. The services are
-packaged as Docker images, published to GitHub Container Registry (GHCR), built and
-deployed by Jenkins, and run with Docker Compose or on Kubernetes (staging and
-production namespaces). Everything uses free services.
+A **full stack**, **cloud-based**, event-driven microservices project: five small services, each with its **own responsibility and its own tables**,
+cooperating only through **events** on Upstash Redis Streams. It uses managed **cloud services**
+(Neon PostgreSQL, Upstash Redis, GitHub Container Registry, GitHub Actions and Codespaces). The services are
+packaged as Docker images, built and deployed by Jenkins, and run with Docker Compose or on Kubernetes
+(staging and production namespaces). Everything uses free tiers.
 
 ## About this project
 
@@ -468,7 +468,7 @@ and then wait for each deployment's rollout. Jenkins needs a kubeconfig for the 
 **rebuild the cluster, and you must give Jenkins a new kubeconfig.** The Secret
 for the target namespace must exist before the first deploy.
 
-## 8. Deploy on Render (original free hosting option)
+## 8. Deploy on Render (optional, not deployed yet)
 
 Create one **Web Service** per row (same repo, set **Root Directory**, build command `pip install -r requirements.txt`).
 Create the three workers first so you have their URLs.
