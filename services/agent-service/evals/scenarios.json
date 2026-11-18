@@ -1,0 +1,43 @@
+[
+  {
+    "name": "happy_path",
+    "question": "What happened to order ORDER-HAPPY?",
+    "status_result": {"order_id": "ORDER-HAPPY", "item": "phone", "quantity": 1, "amount": 500.0, "reason": null, "status": "COMPLETED"},
+    "events_result": {"order_id": "ORDER-HAPPY", "events": [
+      {"stream": "order_placed", "event_type": "OrderPlaced", "occurred_at": "2026-11-17T15:00:00+00:00", "payload": {"order_id": "ORDER-HAPPY", "item": "phone", "quantity": 1}},
+      {"stream": "stock_reserved", "event_type": "StockReserved", "occurred_at": "2026-11-17T15:00:00+00:00", "payload": {"order_id": "ORDER-HAPPY", "amount": 500.0}},
+      {"stream": "payment_confirmed", "event_type": "PaymentConfirmed", "occurred_at": "2026-11-17T15:00:01+00:00", "payload": {"order_id": "ORDER-HAPPY"}},
+      {"stream": "order_completed", "event_type": "OrderCompleted", "occurred_at": "2026-11-17T15:00:01+00:00", "payload": {"order_id": "ORDER-HAPPY"}}
+    ]},
+    "expected_all": ["completed"],
+    "expected_any": [],
+    "forbidden": ["exceeds limit"]
+  },
+  {
+    "name": "payment_failure",
+    "question": "Why did order ORDER-PAYFAIL fail, and was the stock released?",
+    "status_result": {"order_id": "ORDER-PAYFAIL", "item": "laptop", "quantity": 2, "amount": 1800.0, "reason": "Payment: amount 1800.00 exceeds limit 1000.00", "status": "FAILED"},
+    "events_result": {"order_id": "ORDER-PAYFAIL", "events": [
+      {"stream": "order_placed", "event_type": "OrderPlaced", "occurred_at": "2026-11-17T15:49:48+00:00", "payload": {"order_id": "ORDER-PAYFAIL", "item": "laptop", "quantity": 2}},
+      {"stream": "stock_reserved", "event_type": "StockReserved", "occurred_at": "2026-11-17T15:49:48+00:00", "payload": {"order_id": "ORDER-PAYFAIL", "amount": 1800.0}},
+      {"stream": "payment_failed", "event_type": "PaymentFailed", "occurred_at": "2026-11-17T15:49:48+00:00", "payload": {"order_id": "ORDER-PAYFAIL", "reason": "amount 1800.00 exceeds limit 1000.00"}},
+      {"stream": "order_failed", "event_type": "OrderFailed", "occurred_at": "2026-11-17T15:49:48+00:00", "payload": {"order_id": "ORDER-PAYFAIL", "reason": "Payment: amount 1800.00 exceeds limit 1000.00"}}
+    ]},
+    "expected_all": ["payment"],
+    "expected_any": ["cannot", "can't", "could not", "couldn't", "unable", "not confirm", "no event"],
+    "forbidden": ["appears to remain reserved", "remains reserved"]
+  },
+  {
+    "name": "insufficient_stock",
+    "question": "Why did order ORDER-NOSTOCK fail?",
+    "status_result": {"order_id": "ORDER-NOSTOCK", "item": "laptop", "quantity": 6, "amount": 5400.0, "reason": "Insufficient stock: requested 6, available 5", "status": "FAILED"},
+    "events_result": {"order_id": "ORDER-NOSTOCK", "events": [
+      {"stream": "order_placed", "event_type": "OrderPlaced", "occurred_at": "2026-11-17T16:00:00+00:00", "payload": {"order_id": "ORDER-NOSTOCK", "item": "laptop", "quantity": 6}},
+      {"stream": "stock_rejected", "event_type": "StockRejected", "occurred_at": "2026-11-17T16:00:00+00:00", "payload": {"order_id": "ORDER-NOSTOCK", "reason": "Insufficient stock: requested 6, available 5"}},
+      {"stream": "order_failed", "event_type": "OrderFailed", "occurred_at": "2026-11-17T16:00:00+00:00", "payload": {"order_id": "ORDER-NOSTOCK", "reason": "Insufficient stock: requested 6, available 5"}}
+    ]},
+    "expected_all": ["stock"],
+    "expected_any": [],
+    "forbidden": ["exceeds limit"]
+  }
+]
