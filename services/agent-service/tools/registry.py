@@ -1,0 +1,44 @@
+from tools.events import get_order_events
+from tools.orders import get_order_status
+
+ORDER_ID_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "order_id": {"type": "string", "description": "The order ID"},
+    },
+    "required": ["order_id"],
+}
+
+# Tool descriptions sent to Claude so it knows what it can call.
+TOOLS = [
+    {
+        "name": "get_order_status",
+        "description": (
+            "Get the current status of one order from order-service. "
+            "Read-only. Returns the order data, or an error."
+        ),
+        "input_schema": ORDER_ID_SCHEMA,
+    },
+    {
+        "name": "get_order_events",
+        "description": (
+            "List the events recorded for one order, in time order, such as "
+            "order placed, stock reserved, payment failed, order failed. "
+            "Use it to see what happened step by step. "
+            "Read-only. Returns the events, or an error."
+        ),
+        "input_schema": ORDER_ID_SCHEMA,
+    },
+]
+
+TOOL_FUNCTIONS = {
+    "get_order_status": get_order_status,
+    "get_order_events": get_order_events,
+}
+
+
+def run_tool(name, arguments):
+    function = TOOL_FUNCTIONS.get(name)
+    if function is None:
+        return {"error": f"unknown tool: {name}"}
+    return function(**arguments)
