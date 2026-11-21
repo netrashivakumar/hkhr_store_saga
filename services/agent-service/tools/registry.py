@@ -1,3 +1,4 @@
+from tools.actions import republish_order_placed
 from tools.events import get_order_events
 from tools.orders import get_order_status
 
@@ -29,11 +30,21 @@ TOOLS = [
         ),
         "input_schema": ORDER_ID_SCHEMA,
     },
+    {
+        "name": "republish_order_placed",
+        "description": (
+            "WRITE action: publish the OrderPlaced event again to retry an "
+            "order that is stuck in PENDING or STOCK_RESERVED. Completed and "
+            "failed orders are refused. A human must approve every use."
+        ),
+        "input_schema": ORDER_ID_SCHEMA,
+    },
 ]
 
 TOOL_FUNCTIONS = {
     "get_order_status": get_order_status,
     "get_order_events": get_order_events,
+    "republish_order_placed": republish_order_placed,
 }
 
 
