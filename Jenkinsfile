@@ -10,7 +10,7 @@ pipeline {
     environment {
         REGISTRY = 'ghcr.io'
         OWNER    = 'netrashivakumar'
-        SERVICES = 'frontend order-service inventory-service payment-service notification-worker'
+        SERVICES = 'frontend order-service inventory-service payment-service notification-worker agent-service'
     }
 
     stages {
