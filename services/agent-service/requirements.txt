@@ -1,4 +1,4 @@
 anthropic
 requests
 redis
-mcp
+mcp>=2,<3

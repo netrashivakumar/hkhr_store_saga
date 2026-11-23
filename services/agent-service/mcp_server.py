@@ -1,3 +1,4 @@
+import os
 from mcp.server.mcpserver import MCPServer
 
 from tools.events import get_order_events as read_order_events
@@ -19,4 +20,8 @@ def get_order_events(order_id: str) -> dict:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    if os.environ.get("MCP_TRANSPORT") == "http":
+        mcp.run(transport="streamable-http", host="0.0.0.0",
+                port=int(os.environ.get("PORT", "8000")))
+    else:
+        mcp.run(transport="stdio")
