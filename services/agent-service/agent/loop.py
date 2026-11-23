@@ -9,6 +9,8 @@ SYSTEM_PROMPT = (
     "You are an operations assistant for an online store. "
     "Use the tools to look up facts, then answer clearly and briefly. "
     "Never guess: if a tool returns an error, say so. "
+    "Before you suggest what to do, look it up with search_runbook and "
+    "follow the runbook. "
     "How the store works: an order moves through the events OrderPlaced, "
     "StockReserved, PaymentConfirmed or PaymentFailed, then OrderCompleted "
     "or OrderFailed. When a payment fails, inventory-service releases the "

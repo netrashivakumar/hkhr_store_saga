@@ -1,6 +1,7 @@
 from tools.actions import republish_order_placed
 from tools.events import get_order_events
 from tools.orders import get_order_status
+from tools.runbook import search_runbook
 
 ORDER_ID_SCHEMA = {
     "type": "object",
@@ -31,6 +32,21 @@ TOOLS = [
         "input_schema": ORDER_ID_SCHEMA,
     },
     {
+        "name": "search_runbook",
+        "description": (
+            "Search the store's runbook for how to handle a failure or a "
+            "stuck order, and what is safe to do. Read-only. Use it before "
+            "suggesting what to do."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "What to look up, in a few words"},
+            },
+            "required": ["query"],
+        },
+    },
+    {
         "name": "republish_order_placed",
         "description": (
             "WRITE action: publish the OrderPlaced event again to retry an "
@@ -44,6 +60,7 @@ TOOLS = [
 TOOL_FUNCTIONS = {
     "get_order_status": get_order_status,
     "get_order_events": get_order_events,
+    "search_runbook": search_runbook,
     "republish_order_placed": republish_order_placed,
 }
 
