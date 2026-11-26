@@ -596,3 +596,36 @@ the file from git history and re-added the block once.
 - **Known limitation, the dual-write problem**: a service commits to its DB and then publishes.
   A crash in between is repaired by re-publishing on redelivery here, but production systems
   use the **transactional outbox pattern**. A good next exercise.
+
+## AI agent (services/agent-service)
+
+An agent built on Claude (Anthropic API) that investigates orders: why one is stuck or failed, and what to do about it.
+
+### What it does
+- Answers questions like "why did order X fail?" using live data, not guesses.
+- Follows a runbook (`runbook/runbook.md`) before suggesting a fix.
+- Can only read by default. The one action that changes anything (republish an order event) needs a human to approve it, and every action is written to an audit log.
+
+### Tools the agent can call
+- `get_order_status`: reads the order from order-service.
+- `get_order_events`: reads the order's events from the Redis streams.
+- `search_runbook`: finds the matching section of the runbook (keyword search).
+- `republish_order_placed`: re-sends an OrderPlaced event for a stuck order. Approval required.
+
+### Quality and cost
+- 26 unit tests (mock-based, no API calls) and 3 evals that check the agent's answers.
+- Every run prints steps, tokens, tool calls and estimated cost.
+- The agent stops after 5 steps, and tool errors are returned as data, not crashes.
+
+### Run it
+From `services/agent-service`, with the virtual environment active and `ANTHROPIC_API_KEY`, `REDIS_URL` and `ORDER_SERVICE_URL` set:
+
+    python ask.py "why did order 123 fail?"
+    python -m pytest
+    python evals/run_evals.py
+
+### MCP server
+`mcp_server.py` exposes the two read tools over MCP (Model Context Protocol), so other AI tools can use them. It runs on port 8000 in the container and on stdio locally.
+
+### Deployment
+The agent's MCP server has its own Dockerfile and image (`ghcr.io/netrashivakumar/hkhr-agent-service`), a Kubernetes manifest in `k8s/base/agent-service.yaml`, and is part of the Jenkins pipeline, so it is tested, built, pushed and deployed to staging with the other services.

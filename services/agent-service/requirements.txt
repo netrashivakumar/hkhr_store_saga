@@ -1,0 +1,4 @@
+anthropic
+requests
+redis
+mcp>=2,<3

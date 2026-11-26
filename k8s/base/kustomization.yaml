@@ -4,3 +4,4 @@ resources:
   - frontend.yaml
   - order-service.yaml
   - workers.yaml
+  - agent-service.yaml
