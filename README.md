@@ -43,10 +43,10 @@ built on, and a place to practice them.
 | **GitHub Codespaces** | Cloud development environment | Where the project is developed, built and run |
 
 The data store, event broker, image registry, CI and development environment are all cloud
-services, and the free tiers cover all of them. The application containers themselves run
+services, and the free tiers cover all of them. The agent-service also runs on Render, a cloud
+hosting platform (a free web service created from the GHCR image). The other four services run
 on a local kind (Kubernetes in Docker) cluster inside a Codespace, not on managed cloud compute.
-Deploying the same images to a hosting platform such as Render, or to managed Kubernetes
-(EKS, AKS or GKE), is the natural next step.
+Deploying them to Render or to managed Kubernetes (EKS, AKS or GKE) is a possible next step.
 
 ### Patterns demonstrated
 
@@ -468,8 +468,12 @@ and then wait for each deployment's rollout. Jenkins needs a kubeconfig for the 
 **rebuild the cluster, and you must give Jenkins a new kubeconfig.** The Secret
 for the target namespace must exist before the first deploy.
 
-## 8. Deploy on Render (optional, not deployed yet)
+## 8. Deploy on Render (agent-service only)
 
+Only **hkhr-agent-service** is deployed on Render. It runs as a free web service created
+from the container image in GHCR (runtime: Image, region: Virginia). The other four
+services run on the kind cluster. The table below is the original plan to deploy all five
+services from source on Render. That plan has not been carried out.
 Create one **Web Service** per row (same repo, set **Root Directory**, build command `pip install -r requirements.txt`).
 Create the three workers first so you have their URLs.
 
@@ -569,6 +573,7 @@ the file from git history and re-added the block once.
 | Production overlay deployed and tested in the `production` namespace | Done (applied with `kubectl kustomize`) |
 | Production deploy through the Jenkins main pipeline with approval | Done (approved in the Jenkins stage view, then verified in the production namespace) |
 | Separate Redis for production | To do (free plan allows one database) |
+| agent-service deployed on Render (free web service from the GHCR image) | Done (only this service; the other four run on the kind cluster) |
 
 ## Known limitations
 
