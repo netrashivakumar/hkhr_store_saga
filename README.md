@@ -634,3 +634,4 @@ From `services/agent-service`, with the virtual environment active and `ANTHROPI
 
 ### Deployment
 The agent's MCP server has its own Dockerfile and image (`ghcr.io/netrashivakumar/hkhr-agent-service`), a Kubernetes manifest in `k8s/base/agent-service.yaml`, and is part of the Jenkins pipeline, so it is tested, built, pushed and deployed to staging with the other services.
+The CI/CD pipeline (Docker Desktop, kind, Jenkins) also runs on a Windows laptop, not only in Codespaces.
